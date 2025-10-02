@@ -2,14 +2,23 @@ from pydantic_settings import BaseSettings
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
+
 class Settings(BaseSettings):
-    gemini_api_key: str
+    gemini_api_key: str | None = None
+
     class Config:
         env_file = ".env"
 
 settings = Settings()
 
-genai.configure(api_key=settings.gemini_api_key)
+# Prefer st.secrets on Streamlit Cloud
+api_key = st.secrets.get("gemini_api_key", settings.gemini_api_key)
+
+if not api_key:
+    st.error("❌ No GEMINI_API_KEY found. Please set it in `.env` (local) or `Secrets Manager` (Streamlit Cloud).")
+else:
+    genai.configure(api_key=api_key)
+
 model=genai.GenerativeModel("models/gemini-2.5-pro")
 
 def get_gemini_response(question,image):
